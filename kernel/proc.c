@@ -69,7 +69,10 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-
+  p->shmem_total = 0;
+  for(int i = 0; i<4; i++) p->shmem[i]=NULL;
+  
+  
   return p;
 }
 
@@ -158,6 +161,8 @@ fork(void)
   pid = np->pid;
   np->state = RUNNABLE;
   safestrcpy(np->name, proc->name, sizeof(proc->name));
+  np->shmem_total = proc->shmem_total;
+  for(int i = 0; i<4; i++) np->shmem[i] = proc->shmem[i];
   return pid;
 }
 
@@ -231,6 +236,7 @@ wait(void)
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
+		for(int i = 0; i<4; i++) proc->shmem_child[i] = proc->shmem[i];
         release(&ptable.lock);
         return pid;
       }

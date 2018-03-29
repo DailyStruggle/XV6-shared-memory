@@ -31,9 +31,9 @@ fetchstr(struct proc *p, uint addr, char **pp)
 {
   char *s, *ep;
 
-  if(addr >= p->sz)
+  if((addr >= p->sz) && (addr < (USERTOP - (p->shmem_total*PGSIZE))))
     return -1;
-  *pp = (char*)addr;
+  *pp = (char*)(addr < p->sz ? p->sz : USERTOP);
   ep = (char*)p->sz;
   for(s = *pp; s < ep; s++)
     if(*s == 0)
@@ -58,7 +58,9 @@ argptr(int n, char **pp, int size)
   
   if(argint(n, &i) < 0)
     return -1;
-  if((uint)i >= proc->sz || (uint)i+size > proc->sz)
+  if(i<PGSIZE)
+    return -1;
+  if(((uint)i >= proc->sz || (uint)i+size > proc->sz) && (((uint) i < (USERTOP - (proc->shmem_total*PGSIZE))) || ((uint) i + size > USERTOP)))
     return -1;
   *pp = (char*)i;
   return 0;

@@ -40,7 +40,7 @@ exec(char *path, char **argv)
       continue;
     if(ph.memsz < ph.filesz)
       goto bad;
-    if((sz = allocuvm(pgdir, sz, 4096 + ph.va + ph.memsz)) == 0)
+    if((sz = allocuvm(pgdir, sz, ph.va + ph.memsz)) == 0)
       goto bad;
     if(loaduvm(pgdir, (char*)ph.va, ip, ph.offset, ph.filesz) < 0)
       goto bad;
@@ -88,7 +88,12 @@ exec(char *path, char **argv)
   proc->tf->esp = sp;
   switchuvm(proc);
   freevm(oldpgdir);
-
+  
+  proc->shmem_total = 0;
+  for(i = 0; i < 4; i++) {
+    proc->shmem_child[i] = proc->shmem[i];
+    proc->shmem[i] = NULL;
+  }
   return 0;
 
  bad:
