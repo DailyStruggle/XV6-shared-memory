@@ -10,6 +10,9 @@ extern char data[];  // defined in data.S
 
 static pde_t *kpgdir;  // for use in scheduler()
 
+int shmem_counter[4] = { 0 };
+void* shmem_address[4];
+
 // Allocate one page table for the machine for the kernel address
 // space for scheduler processes.
 void
@@ -286,7 +289,11 @@ freevm(pde_t *pgdir)
 
   if(pgdir == 0)
     panic("freevm: no pgdir");
-  deallocuvm(pgdir, USERTOP, 0);
+  deallocuvm(pgdir, USERTOP - ((proc->shmem_total+1)*PGSIZE), 0);
+  //decrement counters when freeing memory
+  for(i = 0; i < 4; i++){
+	  if(proc->shmem_child[i]) shmem_counter[i]--;
+  }
   for(i = 0; i < NPDENTRIES; i++){
     if(pgdir[i] & PTE_P)
       kfree((char*)PTE_ADDR(pgdir[i]));
@@ -317,6 +324,10 @@ copyuvm(pde_t *pgdir, uint sz)
     memmove(mem, (char*)pa, PGSIZE);
     if(mappages(d, (void*)i, PGSIZE, PADDR(mem), PTE_W|PTE_U) < 0)
       goto bad;
+  }
+  //increment counters when adding to memory
+  for(i = 0; i < 4; i++){
+	  if(proc->shmem_child[i]) shmem_counter[i]++;
   }
   return d;
 
@@ -363,4 +374,40 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
     va = va0 + PGSIZE;
   }
   return 0;
+}
+
+void shmem_initialize(void){
+	for(int i = 0; i<4; i++) if((shmem_address[i] = kalloc()) == 0) panic("initialization failed");
+}
+
+void* shmem_access(int page_number){
+	if(page_number<0 || page_number>3) return NULL; //limit page numbers to given range
+	if(proc->shmem[page_number]) return proc->shmem[page_number]; //if exist, then read
+	
+	
+	//else map the data to virtual address space
+	void* tomap = (void *) (USERTOP - ((proc->shmem_total + 1) * PGSIZE));
+
+	if(proc->sz >= (int) tomap) { //catch size issue
+	 return NULL;
+	}
+
+	//catch missing page
+	//mappages function is in vm.c
+	if( mappages(proc->pgdir, tomap, PGSIZE, PADDR(shmem_address[page_number]), PTE_W|PTE_U) < 0 ) {
+	 return NULL;
+	}
+	
+	//copy to process
+	proc->shmem_total++;
+	shmem_counter[page_number]++;
+	proc->shmem[page_number] = tomap;
+	
+	return tomap;
+
+}
+
+int shmem_count(int page_number){
+	if(page_number<0 || page_number>3) return -1; //limit page numbers to given range
+	return shmem_counter[page_number];
 }

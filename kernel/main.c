@@ -62,6 +62,7 @@ mainc(void)
   cinit();
   sti();           // enable inturrupts
   userinit();      // first user process
+  shmem_initialize(); //allocate memory addresses
   scheduler();     // start running processes
 }
 
