@@ -94,6 +94,7 @@ exec(char *path, char **argv)
     proc->shmem_child[i] = proc->shmem[i];
     proc->shmem[i] = NULL;
   }
+  freevm(oldpgdir);
   return 0;
 
  bad:
