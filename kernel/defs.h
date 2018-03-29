@@ -109,6 +109,8 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+void*			shmem_access(int);
+int				shmem_count(int);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
@@ -138,6 +140,7 @@ int             argstr(int, char**);
 int             fetchint(struct proc*, uint, int*);
 int             fetchstr(struct proc*, uint, char**);
 void            syscall(void);
+
 
 // timer.c
 void            timerinit(void);

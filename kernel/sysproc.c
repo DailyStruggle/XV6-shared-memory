@@ -88,3 +88,17 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int 
+sys_shmem_access(void){
+	int page_number;
+	if(argint(0, &page_number) < 0) return -1; //get address and compare;
+	return (int) shmem_access(page_number); //return access of address as integer
+}
+
+int	
+sys_shmem_count(void){
+	int page_number;
+	if(argint(0, &page_number) < 0) return -1; //get address and compare;
+	return shmem_count(page_number); //return count of address
+}
